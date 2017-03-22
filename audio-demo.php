@@ -9,16 +9,22 @@ error_reporting(E_ALL);
 <head>
   <title>Audio Modem Interface - Technology Demo </title>
   <link rel="icon" href="image/favicon.jpg">
-  <?php require_once("../external_ref.php"); ?>
   <!--<script src="js/web-audio-recorder-js-master/lib-minified/WebAudioRecorder.min.js"></script> -->
-  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+  <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css";>
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src= "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
 </head>
 <body>
   <div id='page-wrapper'>
     <!--NavBar-->
     <?php
-    require_once("../navbar.php");
     ?>
     <!--End NavBar-->
     <div id="welcome">
@@ -737,8 +743,5 @@ window.onload = initAudio;
 
 
 
-<?php
-require_once("../footer.php");
-?>
 </body>
 </html>
