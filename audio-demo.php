@@ -25,7 +25,6 @@ error_reporting(E_ALL);
   <div id='page-wrapper'>
     <!--NavBar-->
     <?php
-    require_once("../navbar.php");
     ?>
     <!--End NavBar-->
     <div id="welcome">
@@ -1120,7 +1119,6 @@ window.onload = initAudio;
 
 
 <?php
-require_once("../footer.php");
 ?>
 </body>
 </html>
