@@ -10,21 +10,23 @@ error_reporting(E_ALL);
   <title>Audio Modem Interface - Technology Demo </title>
   <link rel="icon" href="image/favicon.jpg">
   <!--<script src="js/web-audio-recorder-js-master/lib-minified/WebAudioRecorder.min.js"></script> -->
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
-  <!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css";>
+  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
 
-<!-- jQuery library -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css";>
 
-<!-- Latest compiled JavaScript -->
-<script src= "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <!-- jQuery library -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+  <!-- Latest compiled JavaScript -->
+  <script src= "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
 </head>
 <body>
   <div id='page-wrapper'>
     <!--NavBar-->
     <?php
+
     ?>
     <!--End NavBar-->
     <div id="welcome">
@@ -40,66 +42,96 @@ error_reporting(E_ALL);
           The sampling rate: <b id="sampleRate"></b><br>
           Recording Status: <b id = "waveform-message"></b>
         </div>
-        <div id = "waveform-gen" class = "col-xs-6">
-          <div id="wave-controls">
-            <h3>Select Waveform</h3>
-            <div id="type-select" onclick = "changeType()">
-              <input type="radio" value="sine" id="wave-type" name = "wave-type"> Sine
-              <input type="radio" value="square" id="wave-type" name = "wave-type"> Square
-              <input type="radio" value="sawtooth" id="wave-type" name = "wave-type"> Saw
-            </div>
-            <br>
-            <br>
-            Frequency: <input type="text" size="4" value="440" id="freq">     
-            <br>
-            <br>
-            <button id="playButton" onclick="playOsc()"> Play tone</button>
-            <button id="muteButton" onclick="muteOsc()">Mute</button>
-          </div>
-          <div id = "wave-status">
-          </div>
+        <div id ="Audio Buffer Demo" class = "col-xs-6">
+        <h3>Play Audio Buffer</h3>
+          <input type="radio" value="tones" id="bufChoice" name = "bufChoice"> Play the following tones:
+          <input type="checkbox" name="tonevals" value="1700" onclick="updateFreqsToPlay()">1700Hz
+          <input type="checkbox" name="tonevals" value="1300" onclick="updateFreqsToPlay()">1300Hz<br>
+          <input type="radio" value="bits" id="bufChoice" name = "bufChoice"> Transmit String:
+          <input type="text" size="8" value="10101101" id="sequence"><br>
+          Transmitted bits: <b id="transmittedBits"></b><br><br>
+          <button type="button" onclick="audioBufferDemo()">Play Buffer</button>
+          <button type="button" onclick="stopBuffer()">Stop Buffer</button>
         </div>
       </div>
       <div id = "waveform-demos">
         <div id = "zoomed-waveform-wrapper">
           <h3>Waveform</h3>
-          <div id="chart_div" style="height: 230px; width: 1000px"></div>
+          <div id="chart_div" style="height: 230px; width:auto"></div>
         </div>
       </div>
 
-      <div id ="Audio Buffer Demo" class = "col-xs-6">
-      <h3>Play Audio Buffer</h3>
-        <input type="radio" value="tones" id="bufChoice" name = "bufChoice"> Play the following tones:
-        <input type="checkbox" name="tonevals" value="1700" onclick="updateFreqsToPlay()">1700Hz
-        <input type="checkbox" name="tonevals" value="1300" onclick="updateFreqsToPlay()">1300Hz<br>
-        <input type="radio" value="bits" id="bufChoice" name = "bufChoice"> Transmit String:
-        <input type="text" size="8" value="10101101" id="sequence"><br>
-        Transmitted bits: <b id="transmittedBits"></b><br><br>
-        <button type="button" onclick="audioBufferDemo()">Play Buffer</button>
-        <button type="button" onclick="stopBuffer()">Stop Buffer</button>
+      <div id ="Frequency-detect" class = "col-xs-6">
+        <h3>Frequency Detector</h3>
+            1700 Hz Presence: <b id="1700presence"></b> &nbsp;(<b id="1700percent"></b>%) <br>
+            1300 Hz Presence: <b id="1300presence"></b>&nbsp;(<b id="1300percent"></b>%)<br>
+            Total Power     : <b id="totalPower"></b><br>
+            Signal Process State: <b id="signal-Process-State"></b><br>
+            Received Bits: <b id="receivedBits"></b><br>
+            Error Rate: <b id="error-rate"></b><br>
+            Received String: <b id="received-string"></b><br><br>
+            Test Presence <b id="test-Presence"></b><br>
+            Test total Pwr    : <b id="test-Power"></b><br>
       </div>
+
+
+      <div id ="crypt-handshakes" class = "col-xs-6">
+        <h3>Cryptographic Handshake Demo</h3>
+        <div id = "crypt-inputs" class = "col-xs-6">
+          Type in your username <br>
+          <input type="text" id="username">
+          <button type="button" onclick="sendLoginReq()">Submit</button><br>
+          Paste Authentication challenge here<br>
+          <textarea style="height:200px" id="encrypted-message"></textarea>
+          <button type="button" onclick="sendDecryptReq()">Submit</button><br>
+          Paste supposed hash of original message here<br>
+          <textarea style="height:200px" id="decrypted-hash"></textarea>
+          <button type="button" onclick="sendAuthReq()">Submit</button><br>
+        </div>
+        <div id = "crypt-results" class = "col-xs-6" style="word-wrap: break-word;">
+          <div id ="login-response-wrapper" class = "well">
+            <div>Log in response will show here (An encrypted message)</div><br>
+            <div id ="login-response"></div>
+          </div>
+          <div id = "decrypt-response-wrapper" class = "well">
+            <div>Decryption response will show here (Hash of secret message)</div><br>
+            <div id ="decrypt-response"></div>
+          </div>
+          <div id = "auth-result-wrapper" class = "well"><br>
+            <div>Login result will show here (successful or unsuccessful)</div>
+            <div id ="auth-result"></div>
+          </div>
+        </div>
+      </div>
+
       <div id ="AJAX call Demo" class = "col-xs-6">
-      <h3>AJAX Call Demo</h3>
-      Input a number and the server will add one to it <br>
-      <input type="text" size="8" id="ajaxNumber">
-      <button type="button" onclick="AJAXdemo()">Submit</button>
+        <h3>AJAX Call Demo</h3>
+        Input a number and the server will add one to it <br>
+        <input type="text" size="8" id="ajaxNumber">
+        <button type="button" onclick="AJAXdemo()">Submit</button>
         <div id = "AJAX-result">
-        The result will display here
+          The result will display here
         </div>
       </div>
-    </div>
 
-    <div id ="Frequency-detect" class = "col-xs-6">
-      <h3>Frequency Detector</h3>
-          1700 Hz Presence: <b id="1700presence"></b> &nbsp;(<b id="1700percent"></b>%) <br>
-          1300 Hz Presence: <b id="1300presence"></b>&nbsp;(<b id="1300percent"></b>%)<br>
-          Total Power     : <b id="totalPower"></b><br>
-          Signal Process State: <b id="signal-Process-State"></b><br>
-          Received Bits: <b id="receivedBits"></b><br>
-          Error Rate: <b id="error-rate"></b><br>
-          Received String: <b id="received-string"></b><br><br>
-          Test Presence <b id="test-Presence"></b><br>
-          Test total Pwr    : <b id="test-Power"></b><br>
+      <div id = "waveform-gen" class = "col-xs-6">
+        <div id="wave-controls">
+          <h3>Select Waveform</h3>
+          <div id="type-select" onclick = "changeType()">
+            <input type="radio" value="sine" id="wave-type" name = "wave-type"> Sine
+            <input type="radio" value="square" id="wave-type" name = "wave-type"> Square
+            <input type="radio" value="sawtooth" id="wave-type" name = "wave-type"> Saw
+          </div>
+          <br>
+          <br>
+          Frequency: <input type="text" size="4" value="440" id="freq">     
+          <br>
+          <br>
+          <button id="playButton" onclick="playOsc()"> Play tone</button>
+          <button id="muteButton" onclick="muteOsc()">Mute</button>
+        </div>
+        <div id = "wave-status">
+        </div>
       </div>
     </div>
 
@@ -137,7 +169,7 @@ function AJAXdemo(){
   // xmlhttp.send(requestStr);
   $.ajax({
   type: "POST",
-  url: "projects/ajaxDemo.php",
+  url: "ajaxDemo.php",
   data: requestStr,
   cache: false,
   success: function(result){
@@ -145,6 +177,50 @@ function AJAXdemo(){
   }
 });
 }
+
+function sendLoginReq(){
+  var uname = document.getElementById("username").value
+  var requestStr = "username=" + uname
+  $.ajax({
+  type: "POST",
+  url: "login1.php",
+  data: requestStr,
+  cache: false,
+  success: function(result){
+    document.getElementById("login-response").innerHTML = result
+    }
+  });
+}
+
+function sendDecryptReq(){
+  var emsg = document.getElementById("encrypted-message").value
+  var requestStr = "emessage=" + emsg
+  $.ajax({
+  type: "POST",
+  url: "decrypt2.php",
+  data: requestStr,
+  cache: false,
+  success: function(result){
+    document.getElementById("decrypt-response").innerHTML = result
+    }
+  });
+}
+
+function sendAuthReq(){
+  var dhash = document.getElementById("decrypted-hash").value
+  var requestStr = "decryptedHash=" + dhash
+  $.ajax({
+  type: "POST",
+  url: "auth3.php",
+  data: requestStr,
+  cache: false,
+  success: function(result){
+    document.getElementById("auth-result").innerHTML = result
+    }
+  });
+}
+
+
 
 // Create an oscillator and an amplifier.
 function initAudio()
@@ -311,7 +387,7 @@ function playBits(bits) {
   //var strToPlay = document.getElementById("sequence").value;
   // var bytes = [];
   // var bitarr = [];
-  var baud = 100;
+  var baud = baudRate;
   var sF1700 = audioContext.sampleRate / 1700
   var sF1300 = audioContext.sampleRate / 1300
 
@@ -322,7 +398,7 @@ function playBits(bits) {
 
   //Determine how many samples the whole buffer will be
   //We want to include the sync bauds as well, filling 2 buffers on each side with syncing bauds (signal)
-  var nSyncBauds = Math.ceil(bufferSize/baudRate) * 4;
+  var nSyncBauds = Math.ceil(bufferSize/baudRate) * 6;
   var halfSyncBauds = nSyncBauds/2;
 
   var nbauds = bits.length + nSyncBauds
@@ -373,7 +449,7 @@ function playBits(bits) {
     //Overhead: Watching for beginning and end and updating the indicies of the bits and bytes
     if (starting){
       syncIndex++
-      if(syncIndex == halfSyncBauds){
+      if(syncIndex == (2/3) * nSyncBauds){
         syncIndex = 0
         starting = false
       }
@@ -401,7 +477,7 @@ function playBits(bits) {
     // }
    }
  }
-  document.getElementById("transmittedBits").innerHTML = bits.toString();
+  document.getElementById("transmittedBits").innerHTML = bits.join("");
   playBuffer()
 }
 
@@ -555,7 +631,7 @@ function drawChart() {
  var my_dygraph = new Dygraph(document.getElementById("chart_div"),
   chart_data,
   {
-    title: 'Caputured Waveform',
+    title: 'Captured Waveform',
     ylabel: 'Amplitude',
     xlabel: 'time (s)',
     labels: [ "Time", "Amplitude" ],
@@ -690,10 +766,11 @@ var globalIndex = 0;
 var observePoints = [[]];
 var OPindex = 0;
 
-function processBuffer(buffer){
+var lastBuffer = [];
 
-  var phasor1700 = detectFreq(buffer, 100, 1700)
-  var phasor1300 = detectFreq(buffer, 100, 1300)
+function processBuffer(buffer){
+  var phasor1700 = detectFreq(buffer, baudRate, 1700)
+  var phasor1300 = detectFreq(buffer, baudRate, 1300)
 
   //document.getElementById("1700presence").innerHTML = phasor1700.mag.toFixed(6);
   //document.getElementById("1300presence").innerHTML = phasor1300.mag.toFixed(6);
@@ -706,6 +783,7 @@ function processBuffer(buffer){
   switch (sigProcessState)
   {
     case "idle":
+      //wait for a sync signal to be present. Otherwise do nothing
       var transmissionPresent = detectSync(buffer, phasor1700, phasor1300)
       if (transmissionPresent)
         sigProcessState = "transmissionDetected"
@@ -713,10 +791,22 @@ function processBuffer(buffer){
       globalIndex += bufferSize;
       break;
 
-    case "transmissionDetected" :
-      //Find where a chip begins in this buffer. Also start decoding from here on out
+    case "transmissionDetected":
+      //"Do nothing" We are just gathing the sync signal to get a good sync
+      sigProcessState = "syncing";
+      globalIndex += bufferSize;
+      break;
+
+    case "syncing" :
+      //We got two buffers. Find were a chip starts with these buffers
+      var bigBuf = new Float32Array(bufferSize *2 )
+      bigBuf.set(lastBuffer)
+      bigBuf.set(buffer, bufferSize)
+      phasor1700 = detectFreq(bigBuf, baudRate, 1700)
+      phasor1300 = detectFreq(bigBuf, baudRate, 1300) 
       var first_shift = findChip2(phasor1300, phasor1700)
 
+      //Also start decoding from here on out
       shift = decodeBuffer(buffer, first_shift, false)
       sigProcessState = "recieving"
       globalIndex += bufferSize;
@@ -737,6 +827,8 @@ function processBuffer(buffer){
       break;
 
   }
+  lastBuffer = [];
+  lastBuffer = buffer;
 }
 
 function testAccuracy(arr){
@@ -799,6 +891,9 @@ function processBits(bits_arr){
   document.getElementById("received-string").innerHTML = result
 }
 
+var syncAvg1700 = 0;
+var syncAvg1300 = 0;
+
 function decodeBuffer(buffer, shift, inTransmission){
 
   var sigWindow = []
@@ -834,9 +929,13 @@ function decodeBuffer(buffer, shift, inTransmission){
     rx_bits[rx_bitsIndex] = detectBit(sigWindow)
     rx_bitsIndex++
   }
+
+  var numChips = 0;
+  var manSync = false
   //Now decode all the bits after shift
   //Do not decode if a full bit signal (baud) cannot fit
   while ((bufferIndex + samplesPerBaud) < buffer.length){
+    numChips++;
     //make a small buffer sigWindow that's in the middle of a bit signal (same as before)
     j = bufferIndex + sigWindowShift
     observePoints[OPindex] = [globalIndex+j,globalIndex+j+sigWindowSize];
@@ -845,11 +944,30 @@ function decodeBuffer(buffer, shift, inTransmission){
       sigWindow[i] = buffer[j]
       j++
     }
+
     //decode the bit -- same as before
     rx_bits[rx_bitsIndex] = detectBit(sigWindow)
     rx_bitsIndex++
-    // go on to the the next bit signal
+
+
+    if(!inTransmission){
+      syncAvg1300 += pow1300[powArrIndex];
+      syncAvg1700 += pow1700[powArrIndex];
+    }
+
+    // Do fine syncing if we are still there. Otherwise just go onto the the next chip
+    if(manSync){
+      var diff1700 = (pow1700> syncAvg1700+5) || (pow1700> syncAvg1700-5)
+      var diff1700 = (pow1300> syncAvg1300+5) || (pow1300> syncAvg1300-5)
+      if(diff1700 || diff1700);
+    }
     bufferIndex += samplesPerBaud
+  }
+
+  if(!inTransmission){
+    syncAvg1700 = syncAvg1700/(numChips);
+    syncAvg1300 = syncAvg1300/(numChips);
+    manSync = true;
   }
 
   //Prepare the remaining samples for the bridgeBitSignal - copy it there
@@ -1119,6 +1237,7 @@ window.onload = initAudio;
 
 
 <?php
+
 ?>
 </body>
 </html>
