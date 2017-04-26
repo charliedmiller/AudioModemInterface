@@ -81,7 +81,8 @@ error_reporting(E_ALL);
           Type in your username <br>
           <input type="text" id="username">
           <button type="button" onclick="sendLoginReq()">Submit</button><br>
-          Paste Authentication challenge here<br>
+          Enter name and paste Authentication challenge here<br>
+          <input type="text" id="username2">
           <textarea style="height:200px" id="encrypted-message"></textarea>
           <button type="button" onclick="sendDecryptReq()">Submit</button><br>
           Paste supposed hash of original message here<br>
@@ -180,11 +181,12 @@ function AJAXdemo(){
 
 function sendLoginReq(){
   var uname = document.getElementById("username").value
-  var requestStr = "username=" + uname
+  //var udata = document.getElementById("data").value
+  var newdata = { 'username': uname };// , 'data': udata};
   $.ajax({
   type: "POST",
   url: "login1.php",
-  data: requestStr,
+  data: newdata,
   cache: false,
   success: function(result){
     document.getElementById("login-response").innerHTML = result
@@ -194,7 +196,8 @@ function sendLoginReq(){
 
 function sendDecryptReq(){
   var emsg = document.getElementById("encrypted-message").value
-  var requestStr = "emessage=" + emsg
+  var uname = document.getElementById("username2").value
+  var requestStr = 'decryptedHash=' + encodeURIComponent(emsg) + "&username=" + uname
   $.ajax({
   type: "POST",
   url: "decrypt2.php",
@@ -208,7 +211,7 @@ function sendDecryptReq(){
 
 function sendAuthReq(){
   var dhash = document.getElementById("decrypted-hash").value
-  var requestStr = "decryptedHash=" + dhash
+  var requestStr = "emessage=" + dhash
   $.ajax({
   type: "POST",
   url: "auth3.php",
