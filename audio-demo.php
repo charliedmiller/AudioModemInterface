@@ -66,6 +66,8 @@ error_reporting(E_ALL);
             1700 Hz Presence: <b id="1700presence"></b> &nbsp;(<b id="1700percent"></b>%) <br>
             1300 Hz Presence: <b id="1300presence"></b>&nbsp;(<b id="1300percent"></b>%)<br>
             Total Power     : <b id="totalPower"></b><br>
+            Sync Avg 1700     : <b id="sync1700"></b><br>
+            Sync Avg 1300   : <b id="sync1300"></b><br>
             Signal Process State: <b id="signal-Process-State"></b><br>
             Received Bits: <b id="receivedBits"></b><br>
             Received String: <b id="received-string"></b><br>
@@ -670,7 +672,12 @@ function drawChart() {
 
     underlayCallback: function(canvas, area, g) {
       for(var i = 0; i < observePoints.length; i++){
-        highlightArea(canvas, area, g, observePoints[i][0], observePoints[i][1]);
+        if(bitPoints[i] == 1){
+          highlightArea(canvas, area, g, observePoints[i][0], observePoints[i][1],"red");
+        }
+        else{
+          highlightArea(canvas, area, g, observePoints[i][0], observePoints[i][1],"yellow");
+        }
       }
     }
   });
@@ -686,21 +693,28 @@ function addAnnotations(g){
     {
       series: "Amplitude",
       x: observePoints[i][0],
-      shortText: i.toString() + ":" + rx_bits[i].toString(),
-      width: 40
+      shortText: i.toString() + ":" + rx_bits[i].toString()+ "\n" + rx_bits_interp[i],
+      width: 40,
+      height:40
     }
   }
   g.setAnnotations(annotations);
 }
 
-function highlightArea(canvas, area, g, l, r){
+function highlightArea(canvas, area, g, l, r,color){
   var bottom_left = g.toDomCoords(l, -20);
   var top_right = g.toDomCoords(r, +20);
 
   var left = bottom_left[0];
   var right = top_right[0];
 
-  canvas.fillStyle = "rgba(255, 255, 102, 1.0)";
+  switch (color){
+    case "red":
+      canvas.fillStyle = "rgba(255, 230, 230, 1.0)";
+      break;
+    default:
+      canvas.fillStyle = "rgba(255, 255, 102, 1.0)";
+  }
   canvas.fillRect(left, area.y, right - left, area.h);
 }
 
@@ -793,7 +807,17 @@ function resetGlobals(){
   seenMan = 0;
   confidence = []
   cIndex = 0
+  improper_bits = false
+  end = 0
+  start = 0;
+  bitPoints = []
+  rx_bits_interp = []
 }
+
+var end = 0;
+var start = 0;
+var improper_bits = false
+var bitPoints = []
 
 if (!String.prototype.splice) {
     /**
@@ -920,7 +944,7 @@ function processBuffer(buffer){
       shift = decodeBuffer(buffer, shift, true)
       globalIndex += bufferSize;
       var payloadPresent = false
-      var ppPattern = "0122";
+      var ppPattern = /01(4|2)(4|2)/;
       if(rx_bits.join("").search(ppPattern) != -1)
         payloadPresent = true;
       if(rx_bits[rx_bitsIndex -1] == 2 && rx_bits[rx_bitsIndex - 2] == 2 && rx_bits[rx_bitsIndex -3] == 2 && payloadPresent)
@@ -952,34 +976,82 @@ function testAccuracy(arr){
   document.getElementById("error-rate").innerHTML = errRt;
 }
 
-function guessBadBits(bits,powONE,powZERO){
-  var bits_str = rx_bits.join("");
-  var start = bits_str.search("0122") + 4;
-  var end = bits_str.search("222222222222")
+var xferLength = 64
+var rx_bits_interp = []
 
-  for(var i = start; i < end; i++){
-    if(rx_bits[i] != 1 || rx_bits[i] != 0){
-      rx_bits[i] = (powONE[i] > powZERO[i]) ? 1:0
+
+String.prototype.regexIndexOf = function(regex, startpos) {
+    var indexOf = this.substring(startpos || 0).search(regex);
+    return (indexOf >= 0) ? (indexOf + (startpos || 0)) : indexOf;
+}
+
+function guessBadBits(bits,powONE,powZERO){
+  rx_bits_interp = rx_bits
+  var bits_str = rx_bits.join("");
+ start = bits_str.regexIndexOf(/(1|0)/)
+ start = bits_str.regexIndexOf(/(2|4)/,start)
+ //search for the first non-2
+ while(bits[start] == 2 || bits[start] == 4){
+   start++
+ }
+  end = bits_str.search("4222")
+  if(end == -1){
+    end = bits_str.indexOf("222",start);
+  }
+
+  if((end - start) % 8 != 0){
+    console.log("Warning: Bits lost - decoding from end of transmission")
+    improper_bits = true
+    start = end - xferLength
+    var bits_done = 0
+    for(var i = end-1; bits_done < xferLength ; i-- ){
+      if(rx_bits[i] != 1 && rx_bits[i] != 0)
+        rx_bits_interp[i] = (powONE[i] > powZERO[i]) ? 1:0
+      bits_done++
     }
   }
-  return bits;
+  else{
+    for(var i = start; i < end; i++){
+      var nextIsSync = (rx_bits[i+1] == 2)
+      if(rx_bits[i] != 1 && rx_bits[i] != 0 && nextIsSync){
+        rx_bits_interp[i] = (powONE[i] > powZERO[i]) ? 1:0
+      }
+    }
+  }
+  return rx_bits_interp;
 }
 
 function extractPayload(bits_arr){
-
   //Strip up to the second set of 2's
-  var start = bits_arr.indexOf(1)
-  new_bits = bits_arr.slice(start)
-  start = new_bits.indexOf(2)
-  new_bits = new_bits.slice(start)
-  //search for the first non-2
-  start = 0
-  while(new_bits[start] == 2){
-    start++
+  //var start = 0
+
+  new_bits = bits_arr.slice(0,end)
+  // if(improper_bits){
+  //   start = end - xferLength
+  // }
+  // else{
+  //   start = new_bits.indexOf(1)
+  //   new_bits = new_bits.slice(start)
+  //   start = new_bits.indexOf(2)
+  //   new_bits = new_bits.slice(start)
+  //   //search for the first non-2
+  //   start = 0
+  //   while(new_bits[start] == 2){
+  //     start++
+  //   }
+  // }
+  for(var i = start; i < end;i++){
+    bitPoints[i] = 1;
   }
+
   new_bits = new_bits.slice(start)
-  var end = new_bits.indexOf(2)
-  new_bits = new_bits.slice(0,end)
+  // var bits_str = new_bits.join("");
+
+  // var end = bits_str.search("42222")
+  // if(end == -1){
+  //   end = bits_str.search("2222")
+  // }
+
   return new_bits
 }
 
@@ -1011,17 +1083,17 @@ function processBits(bits_arr){
   var u8ArrIndex = 0;
   var uint8 = new Uint8Array();
 
-  new_bits = guessBadBits(bits_arr.concat([2,2,2,2,2,2,2,2,2,2,2,2]),pow1700,pow1300);
+  new_bits = guessBadBits(bits_arr.concat([2,2,2,2]),pow1700,pow1300);
   new_bits = extractPayload(new_bits);
 
   //All data is transferred in bytes. If the number of bits are not divisible by 8 then there must be data missing
   if((new_bits.length % 8) != 0){
     console.log("Warning: Not all bits recieved!!")
-    extractPayload(bits_arr);
+    //extractPayload(bits_arr);
     //Make the rest of the bits 0
     var remainder = new_bits.length % 8
     var zeroFill = []
-    zeroFill.fill(0,remainder)
+    zeroFill.fill(0,8 - remainder)
     new_bits = new_bits.concat(zeroFill)
     //return ""
   }
@@ -1031,6 +1103,8 @@ function processBits(bits_arr){
 }
 
 function generateBits(length){
+  //172 characters
+  //32 characters
   rbits = []
   for(var i = 0; i < length; i++){
     var rand = Math.random()
@@ -1123,9 +1197,9 @@ function decodeBuffer(buffer, shift, inTransmission){
 
     //accumulate to find average of power levels for each freq during the sync signal
     //Will be used to distinguish between a sync signal and a bad window
-    if(!inTransmission){
-      syncAvg1300 += pow1300[powArrIndex-1];
-      syncAvg1700 += pow1700[powArrIndex-1];
+    if(rx_bits.length <= 50){
+      // syncAvg1300 += pow1300[powArrIndex-1];
+      // syncAvg1700 += pow1700[powArrIndex-1];
     }
      
     // Do fine syncing if we are still there. Otherwise just go onto the the next chip
@@ -1158,9 +1232,15 @@ function decodeBuffer(buffer, shift, inTransmission){
 
   //The first decoded buffer shall be all a sync signal. We take the average of the values found in it
   //This is to distinguish between a sync signal and a bad window
-  if(!inTransmission){
-    syncAvg1700 = syncAvg1700/(numChips);
-    syncAvg1300 = syncAvg1300/(numChips);
+  if(rx_bits.length >= 50 && !manSync && seenMan == 0){
+    for(var k = 0; k < 50;k++){
+      syncAvg1300 += pow1300[k];
+      syncAvg1700 += pow1700[k];
+    }
+    syncAvg1700 = syncAvg1700/(50);
+    syncAvg1300 = syncAvg1300/(50);
+    document.getElementById("sync1700").innerHTML = syncAvg1700
+    document.getElementById("sync1300").innerHTML = syncAvg1300
     //We shall sync with a manchester signal in the next buffer
     manSync = true;
   }
@@ -1196,28 +1276,32 @@ function detectBit(buffer){
   powArrIndex++;
 
   var higher = (phasor1700.percent > phasor1300.percent) ? 1:0;
-  var close = (Math.abs(phasor1700.percent - phasor1300.percent) <= 40)
+  var close = (Math.abs(phasor1700.percent - phasor1300.percent) <= 30)
   var syncFar = (Math.abs(syncAvg1700 - syncAvg1300) >= 40)
-  var sInterpretWin = syncFar ? 5 : 5;
+  var sInterpretWin = syncFar ? 10 : 10;
   var close1700 = ((phasor1700.percent < syncAvg1700+sInterpretWin) && (phasor1700.percent > syncAvg1700-sInterpretWin))
   var close1300 = ((phasor1300.percent < syncAvg1300+sInterpretWin) && (phasor1300.percent > syncAvg1300-sInterpretWin))
   var closeToSync = (close1700 && close1300)
+  var halfCloseToSync = (close1700 != close1300)
 
   if(closeToSync || !seenMan){
-    return 2
+    return 2 // this is most likely a sync bit
   }
 
   if(close){
     confidence[cIndex] = 0
     cIndex++
-    return 2
+    if(halfCloseToSync){
+      return 4 //we're not sure but it probably is a sync bit. Used for determining the end of transmission
+    }
+    return 3 // we're not sure
   }
   else{
     confidence[cIndex] = 1
   }
   cIndex++
 
-  return higher
+  return higher //It looks like a databit
 
 
   // if((phasor1300.percent > 3.0) && (Math.floor(phasor1700.percent) == 0)){
