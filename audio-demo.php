@@ -109,7 +109,7 @@ error_reporting(E_ALL);
         </div>
       </div>
 
-      <div id ="AJAX call Demo" class = "col-xs-6">
+      <div id ="AJAX call Demo" class = "col-xs-3">
         <h3>AJAX Call Demo</h3>
         Input a number and the server will add one to it <br>
         <input type="text" size="8" id="ajaxNumber">
@@ -119,7 +119,7 @@ error_reporting(E_ALL);
         </div>
       </div>
 
-      <div id = "waveform-gen" class = "col-xs-6">
+      <div id = "waveform-gen" class = "col-xs-3">
         <div id="wave-controls">
           <h3>Select Waveform</h3>
           <div id="type-select" onclick = "changeType()">
@@ -136,6 +136,22 @@ error_reporting(E_ALL);
           <button id="muteButton" onclick="muteOsc()">Mute</button>
         </div>
         <div id = "wave-status">
+        </div>
+      </div>
+
+      <div id = "waveform-gen" class = "col-xs-6">
+       <h3>Test system accuracy</h3>
+        Select rx or tx <br>
+        <input type="radio" value="rx" id="test-role" name = "test-role"> rx
+        <input type="radio" value="tx" id="test-role" name = "test-role"> tx <br>
+        <button type="button" onclick="testSystem()">Run</button>
+        <div class="col-xs-6">
+          <p>TX Status</p>
+          <div id="tx-test-status"></div>
+        </div>
+        <div class="col-xs-6">
+          <p>RX Status</p>
+          <div id="rx-test-status"></div>
         </div>
       </div>
     </div>
@@ -772,14 +788,17 @@ function generatePercentTable(){
   addAnnotations(global_dygraph);
 }
 
-  function audRecord( e ) {
+  function audRecord( e, testing ) {
+    var isTest = (testing || false)
     if (e.classList.contains("areRecording")){
       stopRecording();
       processBits(rx_bits)
       e.classList.remove("areRecording")
-      leftBuffer = mergeBuffers ( leftchannel, recordingLength );
-      drawChart();
-      generatePercentTable();
+      if(!isTest){
+        leftBuffer = mergeBuffers ( leftchannel, recordingLength );
+        drawChart();
+        generatePercentTable();
+      }
     }else{
       e.classList.add("areRecording")
       recordClear();
@@ -1111,21 +1130,108 @@ function generateBits(length){
     bit = rand > 0.5 ? 1:0
     rbits.push(bit)
   }
-  return bits
+  return rbits
 }
 
-function setTestBits(){
+function setTestBits(bits){
+  requestStr = "sentBits=" + JSON.stringify(bits)
+    $.ajax({
+  type: "POST",
+  url: "transmissionTest.php",
+  data: requestStr,
+  cache: false,
+  success: function(result){
+    document.getElementById("tx-test-status").innerHTML = result
+  }
+});
 
 }
 
 function getTestBits(){
-
+  requestStr = "getBits=1" 
+  $.ajax({
+  type: "GET",
+  url: "transmissionTest.php",
+  data: requestStr,
+  cache: false,
+  success: function(result){
+    document.getElementById("rx-test-status").innerHTML = result
+    return JSON.parse(result)
+  }
+});
 }
 
-function testAcurracy(){
+var totCorrectBits = 0;
+var totalBits = 0
+var totCorrectPackages = 0;
+
+function testAcurracy(myBits){
+  var correctBits = 0
   tBits = getTestBits()
-
+  totalBits += tBits.length;
+  for(var i = 0; i < tBits.length; i++){
+    if(tBits[i] == myBits[i]){
+      totCorrectBits++
+      correctBits++
+    }
+  }
+  if(correctBits == tBits.length)
+    totCorrectPackages++
 }
+
+function testTxSystem(){
+  //generate 100 172*8 bit payloads
+  //generate 100 32*8 bit payloads
+  var longPLs = [[]]
+  var shortPLs = [[]]
+
+  for(var i = 0; i < 100;i++){
+    longPLs[i] = generateBits(172*8)
+    shortPLs[i] = generateBits(32*8)
+  }
+
+  setTestBits(longPLs.concat(shortPLs))
+
+  for(var i = 0; i < 100; i++){
+    playBits(longPLs[i])
+    setTimeout(function() {}, 200)
+  }
+
+  for(var i = 0; i < 100; i++){
+    playBits(shortPLs[i])
+    setTimeout(function() {}, 200)
+  }
+}
+
+function testRxSystem() {
+  var all_bits = getTestBits()
+  var recButton = document.getElementById("recButton")
+
+  for(var i = 0;i < 200;i++){
+    xferLength = all_bits[i].length
+    audRecord(recButton,true)
+  }
+}
+
+function testSystem(){
+  var role = $('input[name=test-role]:checked').val(); 
+
+  if(role == "tx"){
+    testTxSystem()
+  }else{
+    testRxSystem()
+  }
+  
+}
+
+function generateTestTable(){
+  var tableData = [[]]
+  for(var i = 0; i < pow1700.length; i++){
+    tableData[i] = [i, pow1700[i], pow1300[i], rx_bits[i]]
+  }
+  createTable(tableData)
+}
+
 
 var syncAvg1700 = 0;
 var syncAvg1300 = 0;
