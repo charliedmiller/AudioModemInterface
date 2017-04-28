@@ -840,7 +840,7 @@ if (!String.prototype.splice) {
 function bin2hex(str){
   var remainder = str.length % 8
   var zeroFill = []
-  zeroFill.fill(0,remainder)
+  zeroFill.fill(0,8-remainder)
   str.concat(zeroFill)
 
   var result = []
