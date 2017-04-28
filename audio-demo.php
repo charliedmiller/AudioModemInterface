@@ -34,7 +34,7 @@ error_reporting(E_ALL);
         <div id = "recording-demo" class = "col-xs-6">
           <h3>Recording JS script demo</h3>
 
-          <button type="button" onclick="audRecord(this)">Start/Stop</button>
+          <button type="button" id = "recButton" onclick="audRecord(this)">Start/Stop</button>
           <br>
           <br>
 
@@ -68,10 +68,13 @@ error_reporting(E_ALL);
             Total Power     : <b id="totalPower"></b><br>
             Signal Process State: <b id="signal-Process-State"></b><br>
             Received Bits: <b id="receivedBits"></b><br>
+            Received String: <b id="received-string"></b><br>
+            # Bits Recieved: <b id="numRecieved"></b><br>
             Error Rate: <b id="error-rate"></b><br>
-            Received String: <b id="received-string"></b><br><br>
-            Test Presence <b id="test-Presence"></b><br>
-            Test total Pwr    : <b id="test-Power"></b><br>
+            Total E-Rate: <b id="Terror-rate"></b><br>
+             Test Power: <b id="test-Power"></b><br>
+            Test Total power: <b id="test-Presence"></b><br>
+
       </div>
 
 
@@ -81,8 +84,7 @@ error_reporting(E_ALL);
           Type in your username <br>
           <input type="text" id="username">
           <button type="button" onclick="sendLoginReq()">Submit</button><br>
-          Enter name and paste Authentication challenge here<br>
-          <input type="text" id="username2">
+          Paste Authentication challenge here<br>
           <textarea style="height:200px" id="encrypted-message"></textarea>
           <button type="button" onclick="sendDecryptReq()">Submit</button><br>
           Paste supposed hash of original message here<br>
@@ -223,8 +225,6 @@ function sendAuthReq(){
   });
 }
 
-
-
 // Create an oscillator and an amplifier.
 function initAudio()
 {
@@ -360,16 +360,16 @@ function playString(){
   var strToPlay = document.getElementById("sequence").value;
   var bits = []
   bits = encodeString(strToPlay)
-  playBits([0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1])
+  playBits(bits)
   //[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]
 }
 
 function encodeString(str){
   var bytes = [];
   var i = 0;
-  for (i = 0; i < str.length; ++i) {
-    var code = str.charCodeAt(i);
-    bytes = bytes.concat([code & 0xff, code / 256 >>> 0]);
+  for (i = 0; i < str.length; i++) {
+    bytes[i] = str.charCodeAt(i);
+    //bytes = bytes.concat([code & 0xff, code / 256 >>> 0]);
   }
 
   var byteIndex = 0;
@@ -387,27 +387,56 @@ function encodeString(str){
 }
 
 function playBits(bits) {
-  //var strToPlay = document.getElementById("sequence").value;
-  // var bytes = [];
-  // var bitarr = [];
+  document.getElementById("transmittedBits").innerHTML = formatBits(bits);
+
+  compbitarray = bits
   var baud = baudRate;
   var sF1700 = audioContext.sampleRate / 1700
   var sF1300 = audioContext.sampleRate / 1300
 
-  // for (var i = 0; i < strToPlay.length; ++i) {
-  //   var code = strToPlay.charCodeAt(i);
-  //   bytes = bytes.concat([code & 0xff, code / 256 >>> 0]);
-  // }
-
   //Determine how many samples the whole buffer will be
   //We want to include the sync bauds as well, filling 2 buffers on each side with syncing bauds (signal)
   var nSyncBauds = Math.ceil(bufferSize/baudRate) * 6;
-  var halfSyncBauds = nSyncBauds/2;
+  var nManchesterBauds = 8
+  var nStartBauds = 2
+  //var halfSyncBauds = nSyncBauds/2;
+  var nbauds = bits.length + nSyncBauds + nManchesterBauds + nStartBauds
 
-  var nbauds = bits.length + nSyncBauds
   bufferLength = nbauds * samplesPerBaud;
   myAudioBuffer = audioContext.createBuffer(2, bufferLength, audioContext.sampleRate)
   
+  //Append sync and manchester signals to the bit array
+  var header = []
+  var nheader_bits = (4/6) * nSyncBauds + nManchesterBauds
+  for(var i = 0; i < nheader_bits; i++){
+    //Fill a lot with sync bauds, then manchester it up
+    if(i < (2/3) * nSyncBauds){
+      header[i] = 2
+    }
+    else{
+      if(header[i - 1] == 0){
+        header[i] = 1;
+      } 
+      else{
+        header[i] = 0;
+      }
+    }
+  }
+  var startbits = []
+  for(var i =0; i < nStartBauds; i++){
+    startbits[i] = 2
+  }
+
+  header = header.concat(startbits);
+
+  //Append the sync signals at the end
+  var footer = []
+  var nfooter_bits = (1/3) * nSyncBauds
+  for(var i = 0; i < nfooter_bits; i++){
+    footer[i] = 2
+  }
+
+  bits = (header.concat(bits)).concat(footer)
   
   for (var channel = 0; channel < channels; channel++) {
    // This gives us the actual ArrayBuffer that contains the data
@@ -422,17 +451,18 @@ function playBits(bits) {
    for (var k = 0; k < nbauds; k++) {
 
     //Determine if we are syncing yet (either beginning or ending the signal)
-    if( starting || ending ){
-      currentBit = 2
-    }
-    else{
-      currentBit = bits[bitarrIndex]
-      bitarrIndex++
-      compbitarray[compbitarrayIndex] = currentBit;
-      compbitarrayIndex++
-    }
+    // if( starting || ending ){
+    //   currentBit = 2
+    // }
+    // else{
+    //   currentBit = bits[bitarrIndex]
+    //   bitarrIndex++
+    //   compbitarray[compbitarrayIndex] = currentBit;
+    //   compbitarrayIndex++
+    // }
     //bitarr[bitarrIndex] = currentBit
-    
+    currentBit = bits[bitarrIndex]
+    bitarrIndex++
 
     //Fill baud with the kind of signal we want
     for (var j = 0; j < samplesPerBaud; j++ ){
@@ -450,20 +480,20 @@ function playBits(bits) {
     }
 
     //Overhead: Watching for beginning and end and updating the indicies of the bits and bytes
-    if (starting){
-      syncIndex++
-      if(syncIndex == (2/3) * nSyncBauds){
-        syncIndex = 0
-        starting = false
-      }
-      continue
-    }
+    // if (starting){
+    //   syncIndex++
+    //   if(syncIndex == (2/3) * nSyncBauds){
+    //     syncIndex = 0
+    //     starting = false
+    //   }
+    //   continue
+    // }
 
-    if(!ending){
-      //bitIndex++
-      ending = (bitarrIndex == bits.length);
-      continue;
-    }
+    // if(!ending){
+    //   //bitIndex++
+    //   ending = (bitarrIndex == bits.length);
+    //   continue;
+    // }
 
     
     // if (ending){
@@ -480,7 +510,6 @@ function playBits(bits) {
     // }
    }
  }
-  document.getElementById("transmittedBits").innerHTML = bits.join("");
   playBuffer()
 }
 
@@ -658,7 +687,7 @@ function addAnnotations(g){
       series: "Amplitude",
       x: observePoints[i][0],
       shortText: i.toString() + ":" + rx_bits[i].toString(),
-      width: 32
+      width: 40
     }
   }
   g.setAnnotations(annotations);
@@ -732,6 +761,7 @@ function generatePercentTable(){
   function audRecord( e ) {
     if (e.classList.contains("areRecording")){
       stopRecording();
+      processBits(rx_bits)
       e.classList.remove("areRecording")
       leftBuffer = mergeBuffers ( leftchannel, recordingLength );
       drawChart();
@@ -740,20 +770,90 @@ function generatePercentTable(){
       e.classList.add("areRecording")
       recordClear();
       recordDemo();
-      shift = 0
-      bridgeBitSignal = []
-      rx_bits = []
-      rx_bitsIndex = 0
-      observePoints = [[]]
-      OPindex = 0;
-      globalIndex = 0;
-      gotData = false //stays false until we decode a real data bit
-      sigProcessState = "idle"
-      pow1700 = [];
-      pow1300 = [];
-      powArrIndex = 0;
+      resetGlobals();
     }
   }
+
+function resetGlobals(){
+  shift = 0
+  bridgeBitSignal = []
+  rx_bits = []
+  rx_bitsIndex = 0
+  observePoints = [[]]
+  OPindex = 0;
+  globalIndex = 0;
+  gotData = 0 //stays false until we decode a real data bit
+  sigProcessState = "idle"
+  pow1700 = [];
+  pow1300 = [];
+  powArrIndex = 0;
+  syncAvg1700 = 0;
+  syncAvg1300 = 0;
+  manSync = false;
+  seenMan = 0;
+  confidence = []
+  cIndex = 0
+}
+
+if (!String.prototype.splice) {
+    /**
+     * {JSDoc}
+     *
+     * The splice() method changes the content of a string by removing a range of
+     * characters and/or adding new characters.
+     *
+     * @this {String}
+     * @param {number} start Index at which to start changing the string.
+     * @param {number} delCount An integer indicating the number of old chars to remove.
+     * @param {string} newSubStr The String that is spliced in.
+     * @return {string} A new string with the spliced substring.
+     */
+    String.prototype.splice = function(start, delCount, newSubStr) {
+        return this.slice(0, start) + newSubStr + this.slice(start + Math.abs(delCount));
+    };
+}
+
+function bin2hex(str){
+  var remainder = str.length % 8
+  var zeroFill = []
+  zeroFill.fill(0,remainder)
+  str.concat(zeroFill)
+
+  var result = []
+
+  var j = 0
+  var rIndex = 0
+  for (var i = 0 ; i < str.length; i = j) {
+      j += 8; // specify radix--v
+      var byte = str.slice( i, j )
+      result[rIndex] = parseInt(byte, 2 ).toString(16).toUpperCase()
+      rIndex++
+  }
+
+  result = result.join("")
+  return result
+}
+
+function formatBits(bits){
+  var bitStr = bin2hex(bits.join(""))
+  //bitStr_length = bitStr.length
+  var bitIndex = 0
+  for(var i = 0;i < bitStr.length;i++){
+    if(bitIndex % 32 == 0){
+      bitStr = bitStr.splice(i,0,"<br>")
+      i += 4
+    }
+    else if(bitIndex % 8 == 0){
+      bitStr = bitStr.splice(i,0," ")
+      i++
+    }
+    bitIndex++
+  }
+
+  return bitStr
+}
+
+// document.getElementById("receivedBits").innerHTML = formatBits([1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0]);
 
 //-----------Decoder-------------------
 var baudRate = 100
@@ -762,7 +862,8 @@ var shift = 0
 var bridgeBitSignal = []
 var rx_bits = []
 var rx_bitsIndex = 0
-var gotData = false //stays false until we decode a real data bit
+var receivedPayload = []
+var gotData = 0//stays false until we decode a real data bit
 var sigProcessState = "idle"
 
 var globalIndex = 0;
@@ -818,15 +919,21 @@ function processBuffer(buffer){
     case "recieving" :
       shift = decodeBuffer(buffer, shift, true)
       globalIndex += bufferSize;
-      if(gotData && rx_bits[rx_bitsIndex -1] == 2 && rx_bits[rx_bitsIndex - 2] == 2)
+      var payloadPresent = false
+      var ppPattern = "0122";
+      if(rx_bits.join("").search(ppPattern) != -1)
+        payloadPresent = true;
+      if(rx_bits[rx_bitsIndex -1] == 2 && rx_bits[rx_bitsIndex - 2] == 2 && rx_bits[rx_bitsIndex -3] == 2 && payloadPresent)
         sigProcessState = "endingTransmission"
       break
     case "endingTransmission" :
       console.log("Ending transsmssion")
-      processBits(rx_bits)
+      //processBits(rx_bits)
       sigProcessState = "awaitNothing"
       break;
     case "awaitNothing":
+      var recButton = document.getElementById("recButton")
+      audRecord(recButton)
       break;
 
   }
@@ -845,6 +952,56 @@ function testAccuracy(arr){
   document.getElementById("error-rate").innerHTML = errRt;
 }
 
+function guessBadBits(bits,powONE,powZERO){
+  var bits_str = rx_bits.join("");
+  var start = bits_str.search("0122") + 4;
+  var end = bits_str.search("222222222222")
+
+  for(var i = start; i < end; i++){
+    if(rx_bits[i] != 1 || rx_bits[i] != 0){
+      rx_bits[i] = (powONE[i] > powZERO[i]) ? 1:0
+    }
+  }
+  return bits;
+}
+
+function extractPayload(bits_arr){
+
+  //Strip up to the second set of 2's
+  var start = bits_arr.indexOf(1)
+  new_bits = bits_arr.slice(start)
+  start = new_bits.indexOf(2)
+  new_bits = new_bits.slice(start)
+  //search for the first non-2
+  start = 0
+  while(new_bits[start] == 2){
+    start++
+  }
+  new_bits = new_bits.slice(start)
+  var end = new_bits.indexOf(2)
+  new_bits = new_bits.slice(0,end)
+  return new_bits
+}
+
+//processBits([0,1,1,0,1,0,0,0,0,1,1,0,0,1,0,1,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,1,1])
+
+function printRecievedBits(bits){
+  var bitStr = formatBits(bits)
+  document.getElementById("receivedBits").innerHTML = bitStr;
+  document.getElementById("numRecieved").innerHTML = bits.length;
+
+  var result = ""
+  var j = 0;
+    for (var i = 0 ; i < bits.length; i = j) {
+        j += 8; // specify radix--v
+        var byte = bits.slice( i, j )
+        var cCode =parseInt ( byte.join(""), 2 )
+        result += String.fromCharCode( cCode );
+    }
+
+  document.getElementById("received-string").innerHTML = result
+}
+
 function processBits(bits_arr){
   //Strip the 2's from the bit array
   //We are assuming that all 2's (End/Start bits) are only at the end
@@ -854,48 +1011,54 @@ function processBits(bits_arr){
   var u8ArrIndex = 0;
   var uint8 = new Uint8Array();
 
-  //Strip the 2's
-  for(i = 0; i < bits_arr.length; i++){
-    if(bits_arr[i] != 2){
-      new_bits[j] = bits_arr[i]
-      j++
-    }
-  }
-  
+  new_bits = guessBadBits(bits_arr.concat([2,2,2,2,2,2,2,2,2,2,2,2]),pow1700,pow1300);
+  new_bits = extractPayload(new_bits);
 
-
-  document.getElementById("receivedBits").innerHTML = new_bits;
-  testAccuracy(new_bits);
   //All data is transferred in bytes. If the number of bits are not divisible by 8 then there must be data missing
   if((new_bits.length % 8) != 0){
-    console.log("Warning: Not all bits recieved. TODO: make error handler for this")
+    console.log("Warning: Not all bits recieved!!")
+    extractPayload(bits_arr);
+    //Make the rest of the bits 0
+    var remainder = new_bits.length % 8
+    var zeroFill = []
+    zeroFill.fill(0,remainder)
+    new_bits = new_bits.concat(zeroFill)
     //return ""
   }
+  printRecievedBits(new_bits)
+  receivedPayload = new_bits
+  testAcurracy(new_bits)
+}
 
-  //first get a string of each of the bits into a "byte string"
-  while(u8ArrIndex * 8 < new_bits.length){
-    var byte = "";
-    for(i=0;i<8;i++){
-      byte += new_bits[i].toString()
-    }
-
-    //Convert that byte into an integer
-    var intByte = parseInt(byte, 2);
-    //Make that integer 8 bit
-    uint8[u8ArrIndex] = intByte;
-    u8ArrIndex++
+function generateBits(length){
+  rbits = []
+  for(var i = 0; i < length; i++){
+    var rand = Math.random()
+    bit = rand > 0.5 ? 1:0
+    rbits.push(bit)
   }
+  return bits
+}
 
-  var result = "";
-  for(var i = 0; i < uint8.length; ++i){
-    result+= (String.fromCharCode(uint8[i]));
-  }
+function setTestBits(){
 
-  document.getElementById("received-string").innerHTML = result
+}
+
+function getTestBits(){
+
+}
+
+function testAcurracy(){
+  tBits = getTestBits()
+
 }
 
 var syncAvg1700 = 0;
 var syncAvg1300 = 0;
+var manSync = false;
+var seenMan = 0;
+var breakpoint = 0
+//window.watch("manSync",dummy)
 
 function decodeBuffer(buffer, shift, inTransmission){
 
@@ -906,6 +1069,7 @@ function decodeBuffer(buffer, shift, inTransmission){
   var i = 0
   var j = 0
   var bufferIndex = shift
+  var changedGD = false
   //if this isn't the very first buffer to detect a transmission
   if(inTransmission){
     //Record for debug where samples are being analyzed
@@ -934,7 +1098,6 @@ function decodeBuffer(buffer, shift, inTransmission){
   }
 
   var numChips = 0;
-  var manSync = false
   //Now decode all the bits after shift
   //Do not decode if a full bit signal (baud) cannot fit
   while ((bufferIndex + samplesPerBaud) < buffer.length){
@@ -949,27 +1112,56 @@ function decodeBuffer(buffer, shift, inTransmission){
     }
 
     //decode the bit -- same as before
-    rx_bits[rx_bitsIndex] = detectBit(sigWindow)
+    var bit = detectBit(sigWindow);
+    rx_bits[rx_bitsIndex] = bit;
     rx_bitsIndex++
 
+    // if(inTransmission && seenMan && bit == 2 && changedGD == false){
+    //   gotData++;
+    //   changedGD = true;
+    // }
 
+    //accumulate to find average of power levels for each freq during the sync signal
+    //Will be used to distinguish between a sync signal and a bad window
     if(!inTransmission){
-      syncAvg1300 += pow1300[powArrIndex];
-      syncAvg1700 += pow1700[powArrIndex];
+      syncAvg1300 += pow1300[powArrIndex-1];
+      syncAvg1700 += pow1700[powArrIndex-1];
     }
-
+     
     // Do fine syncing if we are still there. Otherwise just go onto the the next chip
     if(manSync){
-      var diff1700 = (pow1700> syncAvg1700+5) || (pow1700> syncAvg1700-5)
-      var diff1700 = (pow1300> syncAvg1300+5) || (pow1300> syncAvg1300-5)
-      if(diff1700 || diff1700);
+      //In order for us to shift, there must be a noticeable difference in the power levels of either freq
+      //Additionally, it's gotta be a bad sync! There will exist some of both signals in a badly synced window
+      // The difference of the power levels can be 50% and 50%, diff of 0
+      //Shift the window a quarter size of the chip so that it'll be fully in one chip
+      var curPow1700 = pow1700[powArrIndex-1]
+      var curPow1300 = pow1300[powArrIndex-1]
+      var diff1700 = (curPow1700 > syncAvg1700+5) || (curPow1700 < syncAvg1700-5)
+      var diff1300 = (curPow1300> syncAvg1300+5) || (curPow1300 < syncAvg1300-5)
+      var closeToZero = ((curPow1300 < 5) || (curPow1300 < 5))
+      var badSync = (Math.abs(curPow1300 - curPow1700) < 40 && !closeToZero)
+      if(seenMan == 1){
+        if(badSync)
+          bufferIndex -= samplesPerBaud/2
+        manSync = false
+      }
+
+      if(diff1700 || diff1300)
+        seenMan++
     }
     bufferIndex += samplesPerBaud
   }
 
+  //We're done syncing with manchester. It'll be false for the rest of the transmission
+  if(manSync && seenMan)
+    manSync = false;
+
+  //The first decoded buffer shall be all a sync signal. We take the average of the values found in it
+  //This is to distinguish between a sync signal and a bad window
   if(!inTransmission){
     syncAvg1700 = syncAvg1700/(numChips);
     syncAvg1300 = syncAvg1300/(numChips);
+    //We shall sync with a manchester signal in the next buffer
     manSync = true;
   }
 
@@ -984,10 +1176,16 @@ function decodeBuffer(buffer, shift, inTransmission){
   return (bufferIndex + samplesPerBaud) % bufferSize
 }
 
+function dummy(){
+  breakpoint++;
+}
+
 var pow1700 = [];
 var pow1300 = [];
 var powArrIndex = 0;
 
+confidence = []
+cIndex = 0
 
 function detectBit(buffer){
   phasor1700 = detectFreq(buffer, baudRate, 1700)
@@ -997,17 +1195,30 @@ function detectBit(buffer){
   pow1300[powArrIndex] = phasor1300.percent;
   powArrIndex++;
 
-  if(Math.abs(phasor1700.percent - phasor1300.percent) <= 40)
-    return 2;
+  var higher = (phasor1700.percent > phasor1300.percent) ? 1:0;
+  var close = (Math.abs(phasor1700.percent - phasor1300.percent) <= 40)
+  var syncFar = (Math.abs(syncAvg1700 - syncAvg1300) >= 40)
+  var sInterpretWin = syncFar ? 5 : 5;
+  var close1700 = ((phasor1700.percent < syncAvg1700+sInterpretWin) && (phasor1700.percent > syncAvg1700-sInterpretWin))
+  var close1300 = ((phasor1300.percent < syncAvg1300+sInterpretWin) && (phasor1300.percent > syncAvg1300-sInterpretWin))
+  var closeToSync = (close1700 && close1300)
 
-  if(phasor1700.percent > phasor1300.percent){
-    //gotData = true;
-    return 1;
+  if(closeToSync || !seenMan){
+    return 2
+  }
+
+  if(close){
+    confidence[cIndex] = 0
+    cIndex++
+    return 2
   }
   else{
-    //gotData = true;
-    return 0;
+    confidence[cIndex] = 1
   }
+  cIndex++
+
+  return higher
+
 
   // if((phasor1300.percent > 3.0) && (Math.floor(phasor1700.percent) == 0)){
   //   gotData = true;
