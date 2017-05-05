@@ -27,7 +27,9 @@ if (isset($_POST['decryptedHash']) ){
   
   $decrypted_hash = md5($decrypted);
   
-  echo "This is the decryption" ."<br>" .$decrypted_hash;
+  file_put_contents('./decdata.txt', $decrypted_hash, FILE_USE_INCLUDE_PATH);
+  
+  echo "This is the decryption" ."<br> " .$decrypted_hash;
   
 }
 else{
