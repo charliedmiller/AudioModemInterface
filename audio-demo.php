@@ -185,14 +185,6 @@ var globalSource = null
 function AJAXdemo(){
   var numberToAdd = document.getElementById("ajaxNumber").value
   var requestStr = "numberToAdd=" + numberToAdd
-  // var xmlhttp = new XMLHttpRequest();
-  // xmlhttp.onreadystatechange = function() {
-  //     if (this.readyState == 4 && this.status == 200) {
-  //         document.getElementById("AJAX-result").innerHTML = this.responseText;
-  //     }
-  //   }
-  // xmlhttp.open("POST", "projects/ajaxDemo.php", true);
-  // xmlhttp.send(requestStr);
   $.ajax({
   type: "POST",
   url: "ajaxDemo.php",
@@ -574,16 +566,6 @@ function playBits(bits) {
    for (var k = 0; k < nbauds; k++) {
 
     //Determine if we are syncing yet (either beginning or ending the signal)
-    // if( starting || ending ){
-    //   currentBit = 2
-    // }
-    // else{
-    //   currentBit = bits[bitarrIndex]
-    //   bitarrIndex++
-    //   compbitarray[compbitarrayIndex] = currentBit;
-    //   compbitarrayIndex++
-    // }
-    //bitarr[bitarrIndex] = currentBit
     currentBit = bits[bitarrIndex]
     bitarrIndex++
 
@@ -601,36 +583,6 @@ function playBits(bits) {
        nowBuffering[i] = currentSine
        i++
     }
-
-    //Overhead: Watching for beginning and end and updating the indicies of the bits and bytes
-    // if (starting){
-    //   syncIndex++
-    //   if(syncIndex == (2/3) * nSyncBauds){
-    //     syncIndex = 0
-    //     starting = false
-    //   }
-    //   continue
-    // }
-
-    // if(!ending){
-    //   //bitIndex++
-    //   ending = (bitarrIndex == bits.length);
-    //   continue;
-    // }
-
-    
-    // if (ending){
-    //   syncIndex++
-    //   if(syncIndex == halfSyncBauds){
-    //     syncIndex = 0
-    //   }
-    // }
-
-    // if(bitIndex == 8)
-    // {
-    //   bitIndex = 0
-    //   byteIndex++
-    // }
    }
  }
   playBuffer()
@@ -1067,7 +1019,6 @@ function formatBits(bits){
   return bitStr
 }
 
-// document.getElementById("receivedBits").innerHTML = formatBits([1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0]);
 
 //-----------Decoder-------------------
 var baudRate = 100
@@ -1093,8 +1044,6 @@ function processBuffer(buffer){
   var phasor1700 = detectFreq(buffer, baudRate, 1700)
   var phasor1300 = detectFreq(buffer, baudRate, 1300)
 
-  //document.getElementById("1700presence").innerHTML = phasor1700.mag.toFixed(6);
-  //document.getElementById("1300presence").innerHTML = phasor1300.mag.toFixed(6);
   document.getElementById("1700percent").innerHTML = phasor1700.percent.toFixed();
   document.getElementById("1300percent").innerHTML = phasor1300.percent.toFixed();
   document.getElementById("totalPower").innerHTML = phasor1300.totPower;
@@ -1184,18 +1133,6 @@ function processBuffer(buffer){
   lastBuffer = buffer;
 }
 
-
-// function testAccuracy(arr){
-//   var errCt = 0;
-//   for(var i = 0; i < compbitarray.length; i++){
-//     if(arr[i] != compbitarray[i]){
-//       errCt++
-//     }
-//   }
-//   var errRt = errCt/compbitarray.length
-//   document.getElementById("error-rate").innerHTML = errRt;
-// }
-
 var xferLength = 64
 var rx_bits_interp = []
 
@@ -1252,7 +1189,6 @@ function extractPayload(bits_arr){
   return new_bits
 }
 
-//processBits([0,1,1,0,1,0,0,0,0,1,1,0,0,1,0,1,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,1,1])
 
 function printRecievedBits(bits){
   var bitStr = formatBits(bits)
@@ -1387,110 +1323,6 @@ function generateTestTable(tIndex){
   
 }
 
-// var longPLs = [[]]
-// var shortPLs = [[]]
-
-// function testTxSystem(){
-//   return
-//   //generate 100 172*8 bit payloads
-//   //generate 100 32*8 bit payloads
-//   longPLs = [[]]
-//   shortPLs = [[]]
-
-//   for(var i = 0; i < 100;i++){
-//     longPLs[i] = generateBits(172*8)
-//     shortPLs[i] = generateBits(32*8)
-//   }
-
-//   //setTestBits(longPLs.concat(shortPLs))
-//   ready = true
-// }
-
-// var ready = false
-
-// setInterval(testInit,1000)
-
-// function testInit(){
-//   return;
-//   if(ready && go){
-//     setInterval(testTxSystem2(),50)
-//     setInterval(testRxSystem2(),50)
-//   }
-// }
-
-// var txTest_index = 0
-
-// function testTxSystem2(){
-//   if(playing){return}
-//   for(var i = txTest_index; i < 100; i++){
-//     if(playing){return}
-//     playBits(longPLs[i])
-//     txTest_index++
-//     //setTimeout(function() {}, 200)
-//   }
-
-//   for(var i = 0; i < 200; i++){
-//     if(playing){return}
-//     playBits(shortPLs[i])
-//     txTest_index++
-//     //setTimeout(function() {}, 200)
-//   }
-// }
-
-// var go = false
-
-// document.addEventListener("keypress",continueTest,false)
-// function continueTest(e){
-//   return
-//   var valid = false
-//   if(!e){
-//     valid = true
-//   }
-//   if(e && e.keyCode == 32)
-//     valid = true
-    
-//   if(valid)
-//     playing = false
-    
-//   go = true
-// }
-
-// function testRxSystem() {
-//   return
-//   getTestBits();
-//   ready = true
-// }
-
-// var rxTest_index = 0
-// var oldRxTI = 0
-
-// function testRxSystem2(){
-//   return
-//   var recButton = document.getElementById("recButton")
-//   if(rxTest_index != 0 || oldRxTI == rxTest_index -1){return}
-//   oldRxTI = rxTest_index
-//   for(var i = rxTest_index;i < 2;i++){
-//     xferLength = all_bits[i].length
-//     audRecord(recButton,true)
-//     testAccurracy(receivedPayload,i)
-//   }
-  
-// }
-
-// function testSystem(){
-//   return
-//   var role = $('input[name=test-role]:checked').val(); 
-
-//   // if(role == "tx"){
-//   //   testTxSystem2()
-//   // }else{
-//   //   testRxSystem()
-//   // }
-  
-//   go = true
-  
-// }
-
 
 var syncAvg1700 = 0;
 var syncAvg1300 = 0;
@@ -1554,11 +1386,6 @@ function decodeBuffer(buffer, shift, inTransmission){
     var bit = detectBit(sigWindow);
     rx_bits[rx_bitsIndex] = bit;
     rx_bitsIndex++
-
-    // if(inTransmission && seenMan && bit == 2 && changedGD == false){
-    //   gotData++;
-    //   changedGD = true;
-    // }
 
     //accumulate to find average of power levels for each freq during the sync signal
     //Will be used to distinguish between a sync signal and a bad window
@@ -1668,20 +1495,6 @@ function detectBit(buffer){
 
   return higher //It looks like a databit
 
-
-  // if((phasor1300.percent > 3.0) && (Math.floor(phasor1700.percent) == 0)){
-  //   gotData = true;
-  //   return 0;
-  // }
-  // else if((phasor1700.percent > 3.0) && (Math.floor(phasor1300.percent) == 0)){
-  //   gotData = true;
-  //   return 1;
-  // }
-  // else{
-  //   //this is a sync bit so just return 2 which will be discarded
-  //   return 2;
-  // }
-
 }
 
 function testDetectFreq2(){
@@ -1765,24 +1578,6 @@ function testDetectFreq(){
 
 }
 
-//  var sine_dy = new Dygraph(document.getElementById("sine-viz"),
-// sinew,
-// {
-//   title: 'Generated Sine',
-//   ylabel: 'Amplitude',
-//   xlabel: 'time (s)',
-//   labels: [ "Time", "Amplitude" ]
-// });
-
-//   var buffer_dy = new Dygraph(document.getElementById("buffer-viz"),
-// buffer_graphdata,
-// {
-//   title: 'Caputured Buffer',
-//   ylabel: 'Amplitude',
-//   xlabel: 'time (s)',
-//   labels: [ "Time", "Amplitude" ]
-// });
-
 
 function detectFreq(buffer, baud, freq){
   var sample = []
@@ -1795,16 +1590,9 @@ function detectFreq(buffer, baud, freq){
   var totPower = 0;
   var i = 0;
 
-  // var sinew = [[0,0]]
-  // var buffer_graphdata = [[0,0]]
-  // var time = []
-
   while (i < buffer.length - 1){
 
 
-    // time[i] = i/audioContext.sampleRate;
-    // sinew[i] = [time[i],Math.sin(i / (sampleFrequency / (Math.PI*2)))]
-    // buffer_graphdata[i] = [time[i],buffer[i]]
 
     totPower += buffer[i] * buffer[i]
     Sine += buffer[i] *  Math.sqrt(2) * Math.cos(i / (sampleFrequency / (Math.PI*2)))
@@ -1816,15 +1604,10 @@ function detectFreq(buffer, baud, freq){
   Sine = Sine/buffer.length
   Cosine = Cosine/buffer.length
 
-  // buffer_dy.updateOptions( { 'file': buffer_graphdata } );
-  // sine_dy.updateOptions( { 'file': sinew } );
+
 
   //get angle in Radians -PI to PI
   var angle = Math.atan2(Cosine,Sine)
-
-  // if (angle < 0) {
-  //   angle += 2 * Math.PI
-  // }
 
   //Map Radians to 0 to samples/period
   var phi = (angle * sampleFrequency)/(2 * Math.PI)
@@ -1839,8 +1622,6 @@ function findChip2(phasor1, phasor2){
   //posL is intended to be the position for the 1300 chip
   var posL = phasor1.phi
   var posS = phasor2.phi
-  //var chipStart =  posS + 52 * (posL-posS)
-  //var chipStart = posS + 51 * (posL-posS)
   var chipStart = parseInt(posL + 51 * (posL-posS))
   chipStart = chipStart % samplesPerBaud
 
